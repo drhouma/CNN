@@ -23,8 +23,8 @@ class S21Matrix {
   ~S21Matrix();
 
   // accessors
-  int GetRow();
-  int GetColumn();
+  int row();
+  int col();
   // mutators
   void EditRow(int value);
   void EditColumn(int value);
@@ -66,6 +66,7 @@ class S21Matrix {
   void GetMinor(S21Matrix src, int rows, int column);
   void FillRandom(double fMin, double fMax);
   void show();
+  void clear();
 
  private:
   void allocate_mem(int rows, int columns);

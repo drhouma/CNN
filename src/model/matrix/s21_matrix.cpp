@@ -95,9 +95,9 @@ double& S21Matrix::operator()(int i, int j) {
 }
 
 // accessors
-int S21Matrix::GetRow() { return _rows; }
+int S21Matrix::row() { return _rows; }
 
-int S21Matrix::GetColumn() { return _columns; }
+int S21Matrix::col() { return _columns; }
 
 // mutators
 void S21Matrix::EditRow(int value) {
@@ -384,4 +384,16 @@ double* S21Matrix::operator[](int i) {
   }
   out = _matrix[i];
   return out;
+}
+
+void S21Matrix::clear() {
+  if (_matrix != nullptr) {
+    for (int i = 0; i < _rows; i++) {
+      delete _matrix[i];
+    }
+    delete _matrix;
+  }
+  _matrix = nullptr;
+  _rows = 0;
+  _columns = 0;
 }
