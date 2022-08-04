@@ -9,6 +9,15 @@ auto CNN_Network::InitKernels(const std::initializer_list<size_t>& topology) {
     m_kernels.push_back(std::vector<S21Matrix>(elem));
   }
 }
+
+/*--- Выделяет память на фильтры(веса) нейросети ---*/
+auto CNN_Network::InitKernels(const std::vector<size_t>& topology) {
+  m_topology = topology;
+  for (auto elem : topology) {
+    m_kernels.push_back(std::vector<S21Matrix>(elem));
+  }
+}
+
 /*--- Скармливает вектор значений нейросети ---*/
 auto CNN_Network::FeedInput(const S21Matrix& input) -> void {
   m_current_input.clear();
@@ -95,7 +104,7 @@ auto CNN_Network::MaxPooling(size_t dimension) -> void {
 /**
  * @brief Вычисляет результат через многослойный перцептрон
  */
-auto CNN_Network::Evaluate() -> void {
+auto CNN_Network::Evaluate() -> std::vector<double> {
   size_t input_size = m_current_input.size() * m_current_input[0].row() *
                       m_current_input[0].row();
   std::vector<double> input(input_size);
@@ -113,4 +122,5 @@ auto CNN_Network::Evaluate() -> void {
   }
   m_dense->FeedInitValues(input);
   m_dense->FeedForward();
+  return m_output = m_dense->GetResultVector();
 }
