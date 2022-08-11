@@ -22,3 +22,9 @@ auto CNN_NetworkInterface::Predict() -> size_t {
     }
   }
 }
+
+auto CNN_NetworkInterface::Train(const S21Matrix& input,
+                                 const std::vector<double> expectedVals)
+    -> void {
+  size_t res = this->Predict();
+}

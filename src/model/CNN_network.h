@@ -9,7 +9,9 @@
 
 /// input = image 28x28
 
-class CNN_Network {
+enum LayerType { INPUT, CONVOLUTION, MAX_POOLING, OUTPUT };
+
+class CNN {
  public:
   auto Conv(size_t cernel_layer) -> void;
   auto MaxPooling(size_t dimension) -> void;
@@ -20,11 +22,16 @@ class CNN_Network {
   auto InitKernels(const std::initializer_list<size_t>& topology);
   auto InitKernels(const std::vector<size_t>& topology);
 
+  auto AddLayer(LayerType type, size_t layerSize) -> void;
+
  private:
   auto EvalCard(S21Matrix& input, S21Matrix& filter) -> S21Matrix;
 
-  std::vector<size_t> m_topology;
+  std::vector<LayerType> m_topology;
   std::vector<std::vector<S21Matrix>> m_kernels;
+
+  std::vector<std::vector<S21Matrix>> m_layers;
+
   std::vector<S21Matrix> m_current_input;
 
   std::vector<double> m_output;

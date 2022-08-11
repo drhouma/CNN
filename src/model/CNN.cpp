@@ -2,33 +2,29 @@
 
 #include "CNN_network.h"
 
-/*--- Выделяет память на фильтры(веса) нейросети ---*/
-auto CNN_Network::InitKernels(const std::initializer_list<size_t>& topology) {
-  m_topology = std::vector<size_t>(topology);
-  for (auto elem : topology) {
-    m_kernels.push_back(std::vector<S21Matrix>(elem));
-  }
-}
-
-/*--- Выделяет память на фильтры(веса) нейросети ---*/
-auto CNN_Network::InitKernels(const std::vector<size_t>& topology) {
-  m_topology = topology;
-  for (auto elem : topology) {
-    m_kernels.push_back(std::vector<S21Matrix>(elem));
-  }
-}
-
 /*--- Скармливает вектор значений нейросети ---*/
-auto CNN_Network::FeedInput(const S21Matrix& input) -> void {
+auto CNN::FeedInput(const S21Matrix& input) -> void {
   m_current_input.clear();
   m_current_input.push_back(input);
+}
+
+auto CNN::AddLayer(LayerType type, size_t layerSize) -> void {
+  m_topology.push_back(type);
+
+  if (type == INPUT) {
+    m_layers.push_back(std::vector<S21Matrix>());
+    m_layers.back().push_back(S21Matrix(layerSize, layerSize));
+  } else if (type == CONVOLUTION) {
+    m_layers.push_back(std::vector<S21Matrix>());
+    // for ()
+  }
 }
 
 /** @brief Вычисляет новое значение матрицы input относительно фильтра
  * @param input Матрица с входными данными
  * @param filter Матрица весов
  */
-auto CNN_Network::EvalCard(S21Matrix& input, S21Matrix& filter) -> S21Matrix {
+auto CNN::EvalCard(S21Matrix& input, S21Matrix& filter) -> S21Matrix {
   S21Matrix card(input);
   // #pragma omp parallel for
   for (int i = 0; i < card.row(); i++) {
@@ -49,7 +45,7 @@ auto CNN_Network::EvalCard(S21Matrix& input, S21Matrix& filter) -> S21Matrix {
  * @brief вычисляет новый сверточный слой
  * @param kernel_layer слой фильтров, с которым будут производиться вычисления
  */
-auto CNN_Network::Conv(size_t kernel_layer) -> void {
+auto CNN::Conv(size_t kernel_layer) -> void {
   std::vector<S21Matrix> newLayer;
   for (auto& elem : m_current_input) {
     for (auto& kernel : m_kernels[kernel_layer]) {
@@ -84,7 +80,7 @@ auto FindMax(S21Matrix& input, size_t i, size_t j, size_t dimension) -> double {
  * @brief Масштабирует матрицы в векторе m_current_input
  * @param dimension - во сколько раз уменьшаются матрицы
  */
-auto CNN_Network::MaxPooling(size_t dimension) -> void {
+auto CNN::MaxPooling(size_t dimension) -> void {
   std::vector<S21Matrix> newLayer;
   int newRows = m_current_input[0].row() / dimension;
   int newCols = m_current_input[0].col() / dimension;
@@ -104,7 +100,7 @@ auto CNN_Network::MaxPooling(size_t dimension) -> void {
 /**
  * @brief Вычисляет результат через многослойный перцептрон
  */
-auto CNN_Network::Evaluate() -> std::vector<double> {
+auto CNN::Evaluate() -> std::vector<double> {
   size_t input_size = m_current_input.size() * m_current_input[0].row() *
                       m_current_input[0].row();
   std::vector<double> input(input_size);

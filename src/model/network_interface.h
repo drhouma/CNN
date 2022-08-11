@@ -4,16 +4,17 @@
 
 #include "CNN_network.h"
 
-enum LayerType { CONVOLUTION, MAX_POOLING, OUTPUT };
-
 class CNN_NetworkInterface {
  public:
-  auto InitNetwork(const std::initializer_list<LayerType>&) -> bool;
+  auto InitNetwork(const std::initializer_list<LayerType> &) -> bool;
 
   auto Predict() -> size_t;
 
+  auto Train(const S21Matrix &input, const std::vector<double> expectedVals)
+      -> void;
+
  private:
   std::vector<LayerType> m_topology;
-  CNN_Network m_net;
+  CNN m_net;
 };
 #endif
