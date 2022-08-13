@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "CNN.h"
+#include "model/CNN.h"
 
 TEST(CNN_tests, Add_layer) {
   CNN net;
