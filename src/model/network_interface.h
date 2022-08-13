@@ -2,7 +2,7 @@
 #define CNN_NETWORK_INTERFACE_H
 #include <algorithm>
 
-#include "CNN_network.h"
+#include "CNN.h"
 
 class CNN_NetworkInterface {
  public:

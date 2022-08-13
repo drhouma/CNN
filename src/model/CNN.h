@@ -32,7 +32,7 @@ class CNN {
 
   std::vector<std::vector<S21Matrix>> m_layers;
 
-  std::vector<S21Matrix> m_current_input;
+  std::vector<S21Matrix>* m_current_input;
 
   std::vector<double> m_output;
   static constexpr int m_h_layers_size = 100;

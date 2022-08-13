@@ -63,6 +63,7 @@ class S21Matrix {
 
   // auxiliary
 
+  void SetVals(const S21Matrix& other);
   void GetMinor(S21Matrix src, int rows, int column);
   void FillRandom(double fMin, double fMax);
   void show();

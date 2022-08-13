@@ -397,3 +397,9 @@ void S21Matrix::clear() {
   _rows = 0;
   _columns = 0;
 }
+
+void S21Matrix::SetVals(const S21Matrix& other) {
+  if (_rows != other._rows || _columns != other._columns) {
+    throw std::invalid_argument("SetVals : matrices sizes dont match");
+  }
+}
