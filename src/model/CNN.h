@@ -17,6 +17,7 @@ class CNN {
  public:
   CNN();
 
+  auto BackProp(std::vector<double>& expectedVals) -> void;
   auto Conv(size_t cernel_layer) -> void;
   auto MaxPooling(size_t dimension) -> void;
   auto Evaluate() -> std::vector<double>;
@@ -32,6 +33,11 @@ class CNN {
 
  private:
   auto EvalCard(S21Matrix& input, S21Matrix& filter) -> S21Matrix;
+
+  auto UpdateGradiend(std::vector<S21Matrix>& localGradient) -> void;
+
+  auto UpdateWeights(std::vector<S21Matrix>& localGrads, int curK, int curL)
+      -> void;
 
   auto InitWeightMatrix(S21Matrix& matrix) -> void;
   auto randomWeight() -> double;
@@ -52,6 +58,8 @@ class CNN {
 
   /// для итерации по слоям в addLayer
   int prevLayer = -1;
+
+  double learningRate = 0.08;
 };
 
 #endif

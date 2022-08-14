@@ -76,9 +76,13 @@ class NetworkInterface {
   virtual ~NetworkInterface() = default;
 
  public:
+  virtual auto FeedInitValues(const std::vector<double> &values) -> void = 0;
   virtual auto BackPropagation(std::vector<double> &ExpectedValues) -> void = 0;
   virtual auto FeedForward() -> void = 0;
-  virtual auto FeedInitValues(const std::vector<double> &values) -> void = 0;
+
+  virtual auto CNNBackPropagation(std::vector<double> &ExpectedValues)
+      -> std::vector<double> = 0;
+
   virtual auto ShowResult() -> void = 0;
   virtual auto SaveWeights(std::string filename) -> void = 0;
   virtual auto GetWeights(std::string filename) -> bool = 0;
@@ -113,6 +117,10 @@ class MatrixNetwork : public NetworkInterface {
   auto FeedForward() -> void override;
   auto FeedInitValues(const std::vector<double> &vals) -> void override;
   auto BackPropagation(std::vector<double> &ExpectedValues) -> void override;
+
+  auto CNNBackPropagation(std::vector<double> &ExpectedValues)
+      -> std::vector<double> override;
+
   auto ShowResult() -> void override;
   auto SaveWeights(std::string filename) -> void override;
   auto GetWeights(std::string filename) -> bool override;
@@ -153,6 +161,10 @@ class GraphNetwork : public NetworkInterface {
   auto FeedForward() -> void override;
   auto FeedInitValues(const std::vector<double> &vals) -> void override;
   auto BackPropagation(std::vector<double> &ExpectedValues) -> void override;
+
+  auto CNNBackPropagation(std::vector<double> &ExpectedValues)
+      -> std::vector<double> = 0;
+
   auto ShowResult() -> void override;
   auto SaveWeights(std::string filename) -> void override;
   auto GetWeights(std::string filename) -> bool override;

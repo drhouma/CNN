@@ -47,9 +47,10 @@ auto CNN::AddLayer(LayerType type, size_t layerSize) -> void {
     }
     m_layers.push_back(std::vector<S21Matrix>());
     int k = m_layers[prevLayer].size() * layerSize;
+    int row = m_layers[prevLayer][0].row() - 2;
+    int col = m_layers[prevLayer][0].col() - 2;
+
     for (int i = 0; i < m_layers[prevLayer].size() * layerSize; i++) {
-      int row = m_layers[prevLayer][0].row();
-      int col = m_layers[prevLayer][0].col();
       m_layers.back().push_back(S21Matrix(row, col));
     }
     m_kernels.push_back(std::vector<S21Matrix>());
@@ -82,17 +83,14 @@ auto CNN::AddLayer(LayerType type, size_t layerSize) -> void {
  * @param filter Матрица весов
  */
 auto CNN::EvalCard(S21Matrix& input, S21Matrix& filter) -> S21Matrix {
-  S21Matrix card(input);
+  S21Matrix card(input.row() - 2, input.col() - 2);
   // #pragma omp parallel for
   for (int i = 0; i < card.row(); i++) {
     for (int j = 0; j < card.col(); j++) {
       double val = 0;
       for (int k1 = 0; k1 < filter.row(); k1++) {
         for (int k2 = 0; k2 < filter.col(); k2++) {
-          if (i + k1 - 1 >= 0 && j + k2 - 1 >= 0 && i + k1 - 1 < card.row() &&
-              j + k2 - 1 < card.col()) {
-            val += input[i + k1 - 1][j + k2 - 1] * filter[k1][k2];
-          }
+          card[i][j] += input[i + k1][j + k2] * filter[k1][k2];
         }
       }
     }
@@ -105,7 +103,6 @@ auto CNN::EvalCard(S21Matrix& input, S21Matrix& filter) -> S21Matrix {
  * @param kernel_layer слой фильтров, с которым будут производиться вычисления
  */
 auto CNN::Conv(size_t kernel_layer) -> void {
-  std::vector<S21Matrix> prevLayer;
   std::vector<S21Matrix>* cur_output = m_current_input + 1;
   int i = 0;
   for (auto& elem : *m_current_input) {
@@ -198,4 +195,91 @@ auto CNN::Predict() -> size_t {
     }
   }
   return result;
+}
+
+auto CNN::UpdateGradiend(std::vector<S21Matrix>& localGradient) -> void {}
+
+auto CNN::UpdateWeights(std::vector<S21Matrix>& localGrads, int curK, int curL)
+    -> void {
+  for (auto& elem : m_layers[curL - 1]) {
+    for (int p = 0; p < m_kernels[curK].size(); p++) {
+      auto& kernel = m_kernels[curK][p];
+      for (int i = 0; i < elem.row() - 2; i++) {
+        for (int j = 0; j < elem.col() - 2; j++) {
+          for (int ik = 0; ik < kernel.row(); ik++) {
+            for (int jk = 0; jk < kernel.col(); jk++) {
+              kernel[ik][jk] -=
+                  localGrads[p][i][j] * learningRate * elem[i + ik][j + jk];
+            }
+          }
+        }
+      }
+    }
+  }
+  m_current_input = m_current_input + 1;
+}
+
+auto ConvertVectorToMatrix(std::vector<double>::iterator& iter, S21Matrix& dst)
+    -> void {
+  for (int i = 0; i < dst.row(); i++) {
+    for (int j = 0; j < dst.col(); j++) {
+      dst[i][j] = *iter;
+      ++iter;
+    }
+  }
+}
+
+auto GetMaxElementIndex(S21Matrix& input, int& row, int& col) -> void {
+  int rowMax = row, colMax = col;
+  double max = input[row][col];
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 2; j++) {
+      if (input[row + i][col + j] > max) {
+        rowMax = row + i;
+        colMax = col + j;
+      }
+    }
+  }
+  row = rowMax;
+  col = colMax;
+}
+
+auto CNN::BackProp(std::vector<double>& expectedVals) -> void {
+  std::vector<S21Matrix> localGradient;
+
+  int curKernel = m_kernels.size() - 1;
+
+  for (int layer = m_topology.size() - 1; layer > 0; layer--) {
+    if (m_topology[layer] == OUTPUT) {
+      std::vector<double> localGrads =
+          m_dense->CNNBackPropagation(expectedVals);
+      auto it = localGrads.begin();
+      for (int i = 0; i < m_layers[layer - 1].size(); i++) {
+        int row = m_layers[layer - 1][0].row();
+        int col = m_layers[layer - 1][0].col();
+        S21Matrix tmp(row, col);
+        ConvertVectorToMatrix(it, tmp);
+        localGradient.push_back(tmp);
+      }
+
+    } else if (m_topology[layer] == CONVOLUTION) {
+      UpdateWeights(localGradient, curKernel, layer);
+      curKernel--;
+    } else if (m_topology[layer] == MAX_POOLING) {
+      std::vector<S21Matrix> newGrads;
+      for (int i = 0; i < localGradient.size(); i++) {
+        S21Matrix* curMatrix = &localGradient[i];
+        S21Matrix tmp(curMatrix->row() * 2, curMatrix->col() * 2);
+        for (int row = 0; row < curMatrix->row(); row++) {
+          for (int col = 0; col < curMatrix->col(); col++) {
+            int newRow = row * 2, newCol = col * 2;
+            GetMaxElementIndex(*curMatrix, newRow, newCol);
+            tmp[newRow][newCol] = (*curMatrix)[row][col];
+          }
+        }
+        newGrads.push_back(tmp);
+      }
+      localGradient = newGrads;
+    }
+  }
 }
