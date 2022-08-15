@@ -34,7 +34,8 @@ class CNN {
  private:
   auto EvalCard(S21Matrix& input, S21Matrix& filter) -> S21Matrix;
 
-  auto UpdateGradiend(std::vector<S21Matrix>& localGradient) -> void;
+  auto UpdateGradiend(std::vector<S21Matrix>& localGradient, int curK, int curL,
+                      LayerType type) -> void;
 
   auto UpdateWeights(std::vector<S21Matrix>& localGrads, int curK, int curL)
       -> void;

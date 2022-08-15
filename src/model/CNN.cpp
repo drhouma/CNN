@@ -197,28 +197,23 @@ auto CNN::Predict() -> size_t {
   return result;
 }
 
-auto CNN::UpdateGradiend(std::vector<S21Matrix>& localGradient) -> void {}
+auto Deconv(S21Matrix& input, S21Matrix& kernel) -> S21Matrix {
+  S21Matrix tmp(input.row() + 2, input.col() + 2);
 
-auto CNN::UpdateWeights(std::vector<S21Matrix>& localGrads, int curK, int curL)
-    -> void {
-  for (auto& elem : m_layers[curL - 1]) {
-    for (int p = 0; p < m_kernels[curK].size(); p++) {
-      auto& kernel = m_kernels[curK][p];
-      for (int i = 0; i < elem.row() - 2; i++) {
-        for (int j = 0; j < elem.col() - 2; j++) {
-          for (int ik = 0; ik < kernel.row(); ik++) {
-            for (int jk = 0; jk < kernel.col(); jk++) {
-              kernel[ik][jk] -=
-                  localGrads[p][i][j] * learningRate * elem[i + ik][j + jk];
-            }
+  for (int i = 0; i < tmp.row(); i++) {
+    for (int j = 0; j < tmp.col(); j++) {
+      for (int ik = 0; ik < kernel.row(); ik++) {
+        for (int jk = 0; jk < kernel.col(); jk++) {
+          if (i + ik - 2 > -1 && i + ik - 2 < input.row() && j + jk - 2 > -1 &&
+              j + jk - 2 < input.col()) {
+            tmp[i][j] += input[i + ik - 2][j + jk - 2] * kernel[ik][jk];
           }
         }
       }
     }
   }
-  m_current_input = m_current_input + 1;
+  return tmp;
 }
-
 auto ConvertVectorToMatrix(std::vector<double>::iterator& iter, S21Matrix& dst)
     -> void {
   for (int i = 0; i < dst.row(); i++) {
@@ -243,43 +238,78 @@ auto GetMaxElementIndex(S21Matrix& input, int& row, int& col) -> void {
   row = rowMax;
   col = colMax;
 }
+auto CNN::UpdateGradiend(std::vector<S21Matrix>& localGradient, int curK,
+                         int curL, LayerType type) -> void {
+  std::vector<S21Matrix> newGrads;
+  if (type == CONVOLUTION) {
+    if (curK > 0) {
+      for (auto& elem : localGradient) {
+        S21Matrix tmp(elem.row() + 2, elem.col() + 2);
+        for (auto& kernel : m_kernels[curK]) {
+          tmp.SetVals(tmp + Deconv(elem, kernel));
+        }
+        newGrads.push_back(tmp);
+      }
+    }
+  } else if (type == MAX_POOLING) {
+    std::vector<S21Matrix> newGrads;
+    for (int i = 0; i < localGradient.size(); i++) {
+      S21Matrix* curMatrix = &localGradient[i];
+      S21Matrix tmp(curMatrix->row() * 2, curMatrix->col() * 2);
+      for (int row = 0; row < curMatrix->row(); row++) {
+        for (int col = 0; col < curMatrix->col(); col++) {
+          int newRow = row * 2, newCol = col * 2;
+          GetMaxElementIndex(*curMatrix, newRow, newCol);
+          tmp[newRow][newCol] = (*curMatrix)[row][col];
+        }
+      }
+      newGrads.push_back(tmp);
+    }
+    localGradient = newGrads;
+  }
+}
+
+auto CNN::UpdateWeights(std::vector<S21Matrix>& localGrads, int curK, int curL)
+    -> void {
+  for (auto& elem : m_layers[curL]) {
+    for (int p = 0; p < m_kernels[curK].size(); p++) {
+      auto& kernel = m_kernels[curK][p];
+      for (int i = 0; i < elem.row() - 2; i++) {
+        for (int j = 0; j < elem.col() - 2; j++) {
+          for (int ik = 0; ik < kernel.row(); ik++) {
+            for (int jk = 0; jk < kernel.col(); jk++) {
+              kernel[ik][jk] -=
+                  localGrads[p][i][j] * learningRate * elem[i + ik][j + jk];
+            }
+          }
+        }
+      }
+    }
+  }
+  m_current_input = m_current_input + 1;
+}
 
 auto CNN::BackProp(std::vector<double>& expectedVals) -> void {
   std::vector<S21Matrix> localGradient;
 
   int curKernel = m_kernels.size() - 1;
+  std::vector<double> localGrads = m_dense->CNNBackPropagation(expectedVals);
+  auto it = localGrads.begin();
+  for (int i = 0; i < m_layers.back().size(); i++) {
+    int row = m_layers.back()[0].row();
+    int col = m_layers.back()[0].col();
+    S21Matrix tmp(row, col);
+    ConvertVectorToMatrix(it, tmp);
+    localGradient.push_back(tmp);
+  }
+  /// если всего два слоя - input и output, то инструкций выше хватит для
+  /// backProp
+  for (int layer = m_topology.size() - 3; layer >= 0; layer--) {
+    UpdateGradiend(localGradient, curKernel, layer + 1, m_topology[layer]);
 
-  for (int layer = m_topology.size() - 1; layer > 0; layer--) {
-    if (m_topology[layer] == OUTPUT) {
-      std::vector<double> localGrads =
-          m_dense->CNNBackPropagation(expectedVals);
-      auto it = localGrads.begin();
-      for (int i = 0; i < m_layers[layer - 1].size(); i++) {
-        int row = m_layers[layer - 1][0].row();
-        int col = m_layers[layer - 1][0].col();
-        S21Matrix tmp(row, col);
-        ConvertVectorToMatrix(it, tmp);
-        localGradient.push_back(tmp);
-      }
-
-    } else if (m_topology[layer] == CONVOLUTION) {
+    if (m_topology[layer + 1] == CONVOLUTION) {
       UpdateWeights(localGradient, curKernel, layer);
       curKernel--;
-    } else if (m_topology[layer] == MAX_POOLING) {
-      std::vector<S21Matrix> newGrads;
-      for (int i = 0; i < localGradient.size(); i++) {
-        S21Matrix* curMatrix = &localGradient[i];
-        S21Matrix tmp(curMatrix->row() * 2, curMatrix->col() * 2);
-        for (int row = 0; row < curMatrix->row(); row++) {
-          for (int col = 0; col < curMatrix->col(); col++) {
-            int newRow = row * 2, newCol = col * 2;
-            GetMaxElementIndex(*curMatrix, newRow, newCol);
-            tmp[newRow][newCol] = (*curMatrix)[row][col];
-          }
-        }
-        newGrads.push_back(tmp);
-      }
-      localGradient = newGrads;
     }
   }
 }
