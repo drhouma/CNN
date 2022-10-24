@@ -13,6 +13,6 @@ int main() {
   random.FillRandom(0, 1);
   net.FeedInput(random);
   std::vector<double> va(10);
-  net.BackProp(va);
+  // net.BackProp(va);
   std::cout << net.Predict();
 }

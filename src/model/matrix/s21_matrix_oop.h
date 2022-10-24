@@ -68,6 +68,7 @@ class S21Matrix {
   void FillRandom(double fMin, double fMax);
   void show();
   void clear();
+  void resize(size_t row, size_t col);
 
  private:
   void allocate_mem(int rows, int columns);

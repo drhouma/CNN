@@ -5,6 +5,9 @@
 
 // заполняет матрицу нулями
 void S21Matrix::allocate_mem(int rows, int columns) {
+  this->clear();
+  _rows = rows;
+  _columns = columns;
   _matrix = new double*[rows];
   for (int i = 0; i < rows; i++) {
     _matrix[i] = new double[columns];
@@ -402,4 +405,8 @@ void S21Matrix::SetVals(const S21Matrix& other) {
   if (_rows != other._rows || _columns != other._columns) {
     throw std::invalid_argument("SetVals : matrices sizes dont match");
   }
+}
+
+void S21Matrix::resize(size_t row, size_t col) {
+  allocate_mem(row, col);
 }

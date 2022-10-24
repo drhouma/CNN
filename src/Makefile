@@ -13,6 +13,9 @@ tests:
 	$(CC) $(SOURCES) $(TEST_SOURCES) -lgtest -o tests.out
 	./tests.out
 
+debug:
+	$(CC) $(SOURCES) main.cpp -g -o debug.out
+
 clean:
 	rm -rf *.out *.o
 	
